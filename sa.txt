@@ -1,0 +1,109 @@
+const discord = require("discord.js");
+const Discord = require ("discord.js")
+const { version } = require('../../package.json');
+const ms = require('pretty-ms');
+const db = require("quick.db")
+const emoji = require("../../emoji.json") 
+const { Color } = require("../../config.json");
+
+const Guild = require("../../database/guildData/autostatus");
+const { MessageActionRow, MessageEmbed, MessageSelectMenu, MessageButton } = require('discord.js');
+const { version: discordjsVersion } = require('discord.js');
+module.exports = {
+  name: "status-auto",
+  description: "Roles on a certain status",
+     options: [
+        {
+            name: 'role',
+            description: 'The role you would like to give.',
+         required: true,
+            type: "ROLE",
+          
+        },
+        {
+            name: 'status',
+            description: 'The status that I should set in my database.',
+            required: true,
+            type: "STRING",
+          
+            
+        },
+        {
+            name: 'logs',
+            description: 'Set the status logs.',
+            required: true,
+            type: "CHANNEL",
+          
+            
+        }
+    ],
+  run: async (client, interaction, args) => {
+  if (!client.guilds.cache.get(interaction.guild.id).members.cache.get(interaction.member.id).permissions.has("MANAGE_GUILD", "MANAGE_ROLES")) {
+                return interaction.reply({
+      embeds: [
+        {
+  color: Color,
+  author: {
+		name: `${interaction.member.user.tag}`,
+		icon_url: `${interaction.member.user.displayAvatarURL({ dynamic: true })}`,
+
+	},
+         // footer: { icon_url: client.user.displayAvatarURL() },
+          	footer: {
+		text: `${client.user.username}`,
+		icon_url: `${client.user.displayAvatarURL()}`,
+	},
+
+          description: `${emoji.error} You're missing  \`MANAGE_ROLES\`, \`MANAGE_SERVER\` permission`,
+          timestamp: new Date(),
+        },
+      ],
+          })
+  }
+  let message = interaction;
+  
+  let s = new Discord.MessageEmbed()
+.setDescription(`${emoji.error} I will not auto role people on a certain status anymore.`)
+ .setAuthor(`${interaction.member.user.tag}`, interaction.member.user.displayAvatarURL({ dynamic: true }))
+   .setColor(`${Color}`)
+             .setFooter(`${client.user.username}`,client.user.displayAvatarURL())
+      .setTimestamp();    
+  const search = await Guild.findOne({ id: interaction.guild.id });
+  if(search) {
+      await Guild.delete()
+
+      return interaction.reply({ embeds: [s] })
+  }
+const logs = interaction.options.getChannel('logs') 
+       const role = interaction.options.getRole('role') 
+          const status = interaction.options.getString('status') 
+           const newSetup = new Guild({
+                id: interaction.guild.id,
+                role: role.id,
+                statusmessage: status,
+                channel: logs.id
+            })
+            newSetup.save();
+let embed = new Discord.MessageEmbed()
+.setDescription(`${emoji.success} I will now give a role to the members with the custom status.\n**Status**:  \`${status}\`\n**Role**:  \`${role.name}\`\n**Logs**:  \`${logs.name}\`  `)
+ .setAuthor(`${interaction.member.user.tag}`, interaction.member.user.displayAvatarURL({ dynamic: true }))
+   .setColor(`${Color}`)
+             .setFooter(`${client.user.username}`,client.user.displayAvatarURL())
+      .setTimestamp();     
+             const row = new MessageActionRow()
+			.addComponents(
+        new MessageButton()
+	.setURL('https://discord.gg/EsBZxsk4Ek')
+					.setLabel('Support')
+					.setStyle('LINK'),
+           new MessageButton()
+	.setURL(`https://discord.com/api/oauth2/authorize?client_id=${client.user.id}&permissions=8&scope=bot%20applications.commands`)
+					.setLabel('Invite Me')
+					.setStyle('LINK'))
+interaction.reply({ content: `${interaction.member.user} has enabled role for status.`, embeds: [embed], components:[row] })
+
+
+
+  return message.guild.channels.cache.get(logs.id).send({ content:  `${emoji.success} Status logs will be sent here.`})
+    }
+  }
